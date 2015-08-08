@@ -21,6 +21,8 @@ public enum FormRowType: String {
     case Email   = "Formulary.Email"
     case Twitter = "Formulary.Twitter"
     case URL     = "Formulary.URL"
+    
+    case SegmentedOptions = "Formulary.SegmentedOptions"
 }
 
 extension UITableView {
@@ -36,6 +38,7 @@ extension UITableView {
         self.registerClass(FormTableViewCell.self, forCellReuseIdentifier: FormRowType.Email.rawValue)
         self.registerClass(FormTableViewCell.self, forCellReuseIdentifier: FormRowType.Twitter.rawValue)
         self.registerClass(FormTableViewCell.self, forCellReuseIdentifier: FormRowType.URL.rawValue)
+        self.registerClass(SegmentedOptionsCell.self, forCellReuseIdentifier: FormRowType.SegmentedOptions.rawValue)
     }
 }
 
@@ -93,8 +96,49 @@ func configureCell(cell: FormTableViewCell, inout row: FormRow) {
         configureTextCell(cell, &row).keyboardType = .Twitter
     case .URL:
         configureTextCell(cell, &row).keyboardType = .URL
+    case .SegmentedOptions:
+        configureSegmentedOptionsCell(cell, &row)
     }
     cell.selectionStyle = .None
+}
+
+func configureSegmentedOptionsCell(cell: FormTableViewCell, inout row: FormRow) {
+    if let cell = cell as? SegmentedOptionsCell, let row = row as? SegmentedOptions {
+        if !cell.layoutHasBeenSetup {
+            cell.contentView.addSubview(cell.label)
+            cell.contentView.addSubview(cell.segmentControl)
+            
+            cell.label.setTranslatesAutoresizingMaskIntoConstraints(false)
+            cell.segmentControl.setTranslatesAutoresizingMaskIntoConstraints(false)
+            
+            cell.contentView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-15-[label]-|", options: nil, metrics: nil, views: ["label": cell.label]))
+            cell.contentView.addConstraint(NSLayoutConstraint(item: cell.label, attribute: .CenterY, relatedBy: .Equal, toItem: cell.contentView, attribute: .CenterY, multiplier: 1, constant: 0))
+            
+            cell.contentView.addConstraint(NSLayoutConstraint(item: cell.segmentControl, attribute: .Right, relatedBy: .Equal, toItem: cell.contentView, attribute: .RightMargin, multiplier: 1, constant: 0))
+            cell.contentView.addConstraint(NSLayoutConstraint(item: cell.segmentControl, attribute: .CenterY, relatedBy: .Equal, toItem: cell.contentView, attribute: .CenterY, multiplier: 1, constant: 0))
+            
+            cell.segmentControl.addTarget(cell, action: "selectedSegmentChanged", forControlEvents: .ValueChanged)
+            
+            cell.layoutHasBeenSetup = true
+        }
+        
+        cell.label.text = row.name
+        
+        cell.segmentControl.removeAllSegments()
+        
+        for (index, segment) in enumerate(row.options) {
+            cell.segmentControl.insertSegmentWithTitle(segment, atIndex: index, animated: false)
+        }
+        
+        cell.selectedIndexCallback = {
+            index in
+            let value = row.options[index]
+            row.action?(value)
+            row.value = value
+        }
+    } else {
+        preconditionFailure("Expected cell of type SegmentedOptionsCell and row of type SegmentedOptions in configureSegmentedOptionsCell")
+    }
 }
 
 func configureTextCell(cell: FormTableViewCell, inout row: FormRow) -> UITextField {
@@ -129,6 +173,17 @@ class FormTableViewCell: UITableViewCell {
     var formRow: FormRow?
     var action :Action?
     var textField :NamedTextField?
+}
+
+class SegmentedOptionsCell : FormTableViewCell {
+    let segmentControl = UISegmentedControl()
+    let label = UILabel()
+    var layoutHasBeenSetup = false
+    var selectedIndexCallback: (Int -> Void)? = nil
+    
+    func selectedSegmentChanged() {
+        selectedIndexCallback?(self.segmentControl.selectedSegmentIndex)
+    }
 }
 
 let ActionTargetControlKey :UnsafePointer<Void> = UnsafePointer<Void>()

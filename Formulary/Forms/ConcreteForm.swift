@@ -55,3 +55,35 @@ public class ConcreteFormRow : FormRow {
         self.action = action
     }
 }
+
+public class SegmentedOptions : FormRow {
+    /// MARK: FormRow protocol implementation
+
+    public var name: String
+    
+    public let type: FormRowType = .SegmentedOptions
+    
+    public var tag: String
+    
+    public var value: AnyObject?
+    
+    public var action: Action? = nil
+    
+    public var validation: Validation
+    
+    /// MARK: custom implementation
+    
+    private static func alwaysValid(String?) -> (valid: Bool, reason: String) {
+        return (valid: true, reason: "")
+    }
+    
+    public let options: [String]
+    
+    public init(name: String, tag: String, options: [String]) {
+        self.name = name
+        self.tag = tag
+        self.value = options[1]
+        self.options = options
+        self.validation = SegmentedOptions.alwaysValid
+    }
+}

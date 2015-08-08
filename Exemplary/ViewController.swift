@@ -22,7 +22,8 @@ class ViewController: FormViewController {
             Formulary.ConcreteFormSection(rows: [
                 Formulary.ConcreteFormRow(name:"Favorite Number", tag: "favoriteNumber", value: nil, type: .Decimal, validation: MinimumNumber("Your favorite number", 47) && MaximumNumber("Your favorite number", 47)),
                 Formulary.ConcreteFormRow(name:"Do you like goats?", tag: "likesGoats", value: false, type: .Switch),
-                Formulary.ConcreteFormRow(name:"Other Thoughts?", tag: "thoughts", type: .Text),],
+                Formulary.ConcreteFormRow(name:"Other Thoughts?", tag: "thoughts", type: .Text),
+                SegmentedOptions(name: "Pet", tag: "pet", options: ["Cats", "Dogs"])],
                 name:"Preferences",
                 footerName: "Fin"),
             Formulary.OptionSection(rowValues:["Ice Cream", "Pizza", "Beer"], name: "Food", value: ["Pizza", "Ice Cream"]),

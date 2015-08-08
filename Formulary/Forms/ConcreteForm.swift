@@ -87,3 +87,24 @@ public class SegmentedOptions : FormRow {
         self.validation = SegmentedOptions.alwaysValid
     }
 }
+
+public class DatePicker : FormRow {
+    public var name: String
+    
+    public let type: FormRowType = .DatePicker
+    
+    public var tag: String
+    
+    public var value: AnyObject?
+    
+    public var action: Action? = nil
+    
+    public var validation: Validation
+
+    public init(name: String, tag: String, initialDate: NSDate, validation: Validation = PermissiveValidation) {
+        self.name = name
+        self.tag = tag
+        self.value = initialDate
+        self.validation = validation
+    }
+}

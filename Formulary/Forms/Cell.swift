@@ -23,6 +23,7 @@ public enum FormRowType: String {
     case URL     = "Formulary.URL"
     
     case SegmentedOptions = "Formulary.SegmentedOptions"
+    case DatePicker = "Formulary.DatePicker"
 }
 
 extension UITableView {
@@ -39,6 +40,7 @@ extension UITableView {
         self.registerClass(FormTableViewCell.self, forCellReuseIdentifier: FormRowType.Twitter.rawValue)
         self.registerClass(FormTableViewCell.self, forCellReuseIdentifier: FormRowType.URL.rawValue)
         self.registerClass(SegmentedOptionsCell.self, forCellReuseIdentifier: FormRowType.SegmentedOptions.rawValue)
+        self.registerClass(DatePickerCell.self, forCellReuseIdentifier: FormRowType.DatePicker.rawValue)
     }
 }
 
@@ -98,8 +100,29 @@ func configureCell(cell: FormTableViewCell, inout row: FormRow) {
         configureTextCell(cell, &row).keyboardType = .URL
     case .SegmentedOptions:
         configureSegmentedOptionsCell(cell, &row)
+    case .DatePicker:
+        configureDatePickerCell(cell, &row)
     }
     cell.selectionStyle = .None
+}
+
+func configureDatePickerCell(cell: FormTableViewCell, inout row: FormRow) {
+    if let cell = cell as? DatePickerCell, let row = row as? DatePicker {
+        cell.setupIfNeeded()
+
+        cell.nameLabel.text = row.name
+        cell.dateInput.text = "\(row.value as! NSDate)"
+        cell.datePicker.date = row.value as! NSDate
+
+        cell.dateChangedCallback = {
+            date in
+            row.action?(date)
+            row.value = date
+            cell.dateInput.text = "\(date)"
+        }
+    } else {
+        preconditionFailure("Expected cell of type DatePickerCell and row of type DatePicker in configureDatePickerCell")
+    }
 }
 
 func configureSegmentedOptionsCell(cell: FormTableViewCell, inout row: FormRow) {
@@ -185,6 +208,52 @@ class SegmentedOptionsCell : FormTableViewCell {
         selectedIndexCallback?(self.segmentControl.selectedSegmentIndex)
     }
 }
+
+class DatePickerCell : FormTableViewCell {
+    let nameLabel = UILabel()
+    let dateInput = UITextField()
+    let datePicker = UIDatePicker()
+
+    var dateChangedCallback: (NSDate -> Void)? = nil
+    
+    var layoutHasBeenSetup = false
+    
+    // TODO: should be called once by the super class instead of every presentation
+    func setupIfNeeded() {
+        if layoutHasBeenSetup {
+            return
+        }
+        
+        contentView.addSubview(nameLabel)
+        contentView.addSubview(dateInput)
+        
+        dateInput.inputView = datePicker
+        datePicker.datePickerMode = .Date
+        
+        nameLabel.setTranslatesAutoresizingMaskIntoConstraints(false)
+        dateInput.setTranslatesAutoresizingMaskIntoConstraints(false)
+        
+        contentView.addConstraint(NSLayoutConstraint(item: nameLabel, attribute: .Left, relatedBy: .Equal, toItem: contentView, attribute: .LeftMargin, multiplier: 1, constant: 0))
+        contentView.addConstraint(NSLayoutConstraint(item: nameLabel, attribute: .CenterY, relatedBy: .Equal, toItem: contentView, attribute: .CenterY, multiplier: 1, constant: 0))
+
+        dateInput.setContentHuggingPriority(UILayoutPriority()+1, forAxis: UILayoutConstraintAxis.Horizontal)
+        contentView.addConstraint(NSLayoutConstraint(item: dateInput, attribute: .Left, relatedBy: .Equal, toItem: nameLabel, attribute: .Right, multiplier: 1, constant: 0))
+        contentView.addConstraint(NSLayoutConstraint(item: dateInput, attribute: .Right, relatedBy: .Equal, toItem: contentView, attribute: .RightMargin, multiplier: 1, constant: 0))
+        contentView.addConstraint(NSLayoutConstraint(item: dateInput, attribute: .Height, relatedBy: .Equal, toItem: contentView, attribute: .Height, multiplier: 1, constant: 0))
+        contentView.addConstraint(NSLayoutConstraint(item: dateInput, attribute: .CenterY, relatedBy: .Equal, toItem: contentView, attribute: .CenterY, multiplier: 1, constant: 0))
+
+        dateInput.textAlignment = .Right
+
+        datePicker.addTarget(self, action: "datePickerValueChanged", forControlEvents: .ValueChanged)
+        
+        layoutHasBeenSetup = true
+    }
+    
+    func datePickerValueChanged() {
+        dateChangedCallback?(datePicker.date)
+    }
+}
+
 
 let ActionTargetControlKey :UnsafePointer<Void> = UnsafePointer<Void>()
 
